@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<script type="text/javascript" src="./script.js"></script>
+<link href="style.css" rel="stylesheet" type="text/css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+
+<head> 
+    <style>
+        body {
+            background-color: rgb(255, 246, 247);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 
+            Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+    </style>
+    <title>About</title>
+</head>
+
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+
+            </ul>
+        </nav>
+
+    </header>
+
+    <div class="bucket1">
+        <p style="font-size:27pt; font-family:system-ui, -apple-system, BlinkMacSystemFont, 
+        'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; padding-left: 15%; 
+        color: rgb(21, 21, 44);">Fine Grained Emotion Classification Analysis!</p>
+        
+        <!-- <form action="http://127.0.0.1:12345/classify" method="POST" id="desc" style="font-size: 17pt; font-family:system-ui, -apple-system, BlinkMacSystemFont, 
+        'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; padding-left: 15%;
+        padding-right: 15%; 
+        color: rgb(21, 21, 44);">
+            <p>Enter the text you want to classify!</p>
+            <input id="myText" type="text" name="text" class="text" required>
+            <button type="submit" onclick="classify">Classify</button>
+        </form> -->
+    </div>
+
+    <div id="inputBlock">
+        <input id="myText" type="text" name="text" class="text" required>
+    </div>
+
+    <div id="buttonBlock">
+        <button onclick="predict()" id="button">Predict</button>
+    </div>
+    
+    <div id="result" style="padding-left: 15%; padding-right: 10%; font-size: 0.5cm;">
+    </div>    
+    
+
+    <div style="height:200px"></div>
+
+    <footer>
+        <!-- <p>Copyright &#169 Ashish Agrawal 2022</p> -->
+    </footer>
+
+</body>
+
+</html>
