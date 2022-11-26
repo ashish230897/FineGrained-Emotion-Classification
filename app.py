@@ -66,9 +66,9 @@ def classify():
         print(json_)
         text = json_["text"]
 
-        classes, class_colors, class_words, class_attrs = predict(text, model, tokenizer, device)
+        classes, class_colors, class_words, class_attrs, lime_colors = predict(text, model, tokenizer, device)
 
-        return jsonify({'classes': classes, 'class_colors': class_colors, 'class_words': class_words, "class_attrs": class_attrs})
+        return jsonify({'classes': classes, 'class_colors': class_colors, 'class_words': class_words, "class_attrs": class_attrs, "lime_colors": lime_colors})
 
     except:
 

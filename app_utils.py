@@ -23,6 +23,7 @@ from IPython.display import display, HTML
 import matplotlib as mpl
 from matplotlib.colors import Normalize, rgb2hex
 import pandas as pd
+from lime.lime_text import LimeTextExplainer
 
 parameters = {"model": "bhadresh-savani/bert-base-go-emotion",  # model_type: t5-base/t5-large
     "max_source_length": 512,  # max length of source text
@@ -42,6 +43,12 @@ label_list = list(index_label.values())
 ref_token_id = None
 sep_token_id = None
 cls_token_id = None
+device = None
+tokenizer = None
+model = None
+
+lime_index = 0
+lime_thresh = 0
 
 def construct_input_ref_pair(text, ref_token_id, sep_token_id, cls_token_id, device, tokenizer):
     text_ids = tokenizer.encode(text, add_special_tokens=False)
@@ -51,6 +58,7 @@ def construct_input_ref_pair(text, ref_token_id, sep_token_id, cls_token_id, dev
 
     # construct reference token ids 
     ref_input_ids = [cls_token_id] + [ref_token_id] * (len(input_ids)-2) + [sep_token_id]
+    #print(device, input_ids, ref_input_ids)
 
     return torch.tensor([input_ids], device=device), torch.tensor([ref_input_ids], device=device), len(input_ids)
 
@@ -126,10 +134,12 @@ def explainability(data, limit, model, device):
 def get_predictions(preds):
     all_classes = []
     all_preds = []
+    global lime_thresh
 
     for pred in preds:
         classes = []
         for thresh in [0.32,0.28,0.24,0.20,0.16,0.12]:
+            lime_thresh = thresh
             classes = pred.detach().cpu().numpy()[0] > thresh
             flag = False
             for class_ in classes:
@@ -142,18 +152,66 @@ def get_predictions(preds):
     
     return all_classes, all_preds
 
+def predict_lime(texts):
+    outputs = []
+    for text in texts:
+        input_ids, ref_input_ids, sep_id = construct_input_ref_pair(text, ref_token_id, sep_token_id, cls_token_id, device, tokenizer)
+        attention_mask = construct_attention_mask(input_ids)
 
-def predict(text, model, tokenizer, device):
+        pred = predict_(model, input_ids, attention_mask)
+        pred = pred.detach().cpu().numpy()[0]
+        out = pred[lime_index]
+        outs = [0, 0]
+        if out > lime_thresh:
+            outs[1] = 1
+        else: outs[0] = 1
+        outputs.append(outs)
+    return np.array(outputs)
+
+def lime_saliency(index, source_text):
+    global lime_index
+    lime_index = index
+
+    explainer = LimeTextExplainer()
+    exp = explainer.explain_instance(source_text, predict_lime, num_features=len(source_text.split()), num_samples=300)
+    lis = exp.as_list()
+    print(lis)
+    word_score = {}
+    words = []
+    scores = []
+    for tup in lis:
+        word,score = tup[0], tup[1]
+        word_score[word] = score
+    
+    for word in source_text.split():
+        words.append(word)
+        score = 0 if word not in word_score else word_score[word]
+        scores.append(score)
+    
+    return color(scores, words)
+
+
+def predict(text, model_, tokenizer_, device_):
     # cleaning data so as to ensure data is in string type
     source_text = " ".join(text.split())
+    global device
+    global tokenizer
+    global ref_token_id
+    global sep_token_id
+    global cls_token_id
+    global model
 
-    ref_token_id = tokenizer.pad_token_id # A token used for generating token reference
-    sep_token_id = tokenizer.sep_token_id # A token used as a separator at the end of the text.
-    cls_token_id = tokenizer.cls_token_id # A token used for prepending to the word sequence
+
+    ref_token_id = tokenizer_.pad_token_id # A token used for generating token reference
+    sep_token_id = tokenizer_.sep_token_id # A token used as a separator at the end of the text.
+    cls_token_id = tokenizer_.cls_token_id # A token used for prepending to the word sequence
+    device = device_
+    tokenizer = tokenizer_
+    model = model_
 
     data = []
     for i,text in enumerate([source_text]):
-        input_ids, ref_input_ids, sep_id = construct_input_ref_pair(text, ref_token_id, sep_token_id, cls_token_id, device, tokenizer)
+        input_ids, ref_input_ids, sep_id = construct_input_ref_pair(text, ref_token_id, sep_token_id, cls_token_id, device_, tokenizer_)
         attention_mask = construct_attention_mask(input_ids)
 
         indices = input_ids[0].detach().tolist()
@@ -161,7 +219,7 @@ def predict(text, model, tokenizer, device):
 
         data.append((input_ids, ref_input_ids, attention_mask, all_tokens))
 
-    attributions, predictions = explainability(data, 16, model, device)
+    attributions, predictions = explainability(data, 16, model_, device_)
     predictions, probabilities = get_predictions(predictions)
 
     # compute colorful words
@@ -175,8 +233,10 @@ def predict(text, model, tokenizer, device):
     classes = [index for index,i in enumerate(pred) if i]
     class_colors = []
     class_words = []
+    lime_colors = []
     for index in classes:
         class_attr = attributions[0][index]
+        print(class_attr)
         word_scores = [0 for _ in range(len(class_attr))]
         words = ["" for _ in range(len(class_attr))]
         for m in range(len(class_attr)):
@@ -186,10 +246,14 @@ def predict(text, model, tokenizer, device):
         print(" ".join(words[1:-1]))
         class_colors.append(color(word_scores[1:-1], words[1:-1]))
         class_words.append(words[1:-1])
-    
+
+
+        # construct saliency map for lime
+        lime_colors.append(lime_saliency(index, source_text))
+
     class_attrs = color(probab, label_list)
 
-    return classes_, class_colors, class_words, class_attrs
+    return classes_, class_colors, class_words, class_attrs, lime_colors
 
 if __name__ == "__main__":
 

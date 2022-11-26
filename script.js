@@ -33,6 +33,17 @@ function predict(){
           }
           
           currentDiv.appendChild(newDiv);
+
+          newDiv = document.createElement('div');
+          j = 0;
+
+          newDiv.innerHTML += "<br><b>Using Lime<b><br>"
+          newDiv.innerHTML += myBlob["classes"][i] + ": ";
+          for(j = 0; j < myBlob["lime_colors"][i].length; j++){
+            newDiv.innerHTML += myBlob["lime_colors"][i][j] + " ";
+          }
+          
+          currentDiv.appendChild(newDiv);
          }
 
         var newDiv = document.createElement('div');
